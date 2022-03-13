@@ -1,4 +1,4 @@
-package aws
+package rds_test
 
 import (
 	"fmt"
@@ -6,18 +6,21 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/rds"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/aws-sdk-go-base/v2/awsv1shim/v2/tfawserr"
+	sdkacctest "github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	"github.com/hashicorp/terraform-provider-aws/internal/acctest"
+	"github.com/hashicorp/terraform-provider-aws/internal/conns"
 )
 
 func TestAccAWSRdsSnapshotCopy_basic(t *testing.T) {
 	var v rds.DBSnapshot
-	rInt := acctest.RandInt()
+	rInt := sdkacctest.RandInt()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		Providers:    acctest.Providers,
 		CheckDestroy: testAccCheckRdsDbSnapshotCopyDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -32,12 +35,12 @@ func TestAccAWSRdsSnapshotCopy_basic(t *testing.T) {
 
 func TestAccAWSRdsDbSnapshotCopy_withRegions(t *testing.T) {
 	var v rds.DBSnapshot
-	rInt := acctest.RandInt()
+	rInt := sdkacctest.RandInt()
 	var providers []*schema.Provider
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: testAccProviderFactories(&providers),
+		PreCheck:          func() { acctest.PreCheck(t) },
+		ProviderFactories: acctest.ProviderFactories,
 		CheckDestroy:      testAccCheckRdsDbSnapshotCopyDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -53,10 +56,10 @@ func TestAccAWSRdsDbSnapshotCopy_withRegions(t *testing.T) {
 
 func TestAccAWSRdsDbSnapshotCopy_disappears(t *testing.T) {
 	var v rds.DBSnapshot
-	rInt := acctest.RandInt()
+	rInt := sdkacctest.RandInt()
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
+		PreCheck:     func() { acctest.PreCheck(t) },
+		Providers:    acctest.Providers,
 		CheckDestroy: testAccCheckRdsDbSnapshotCopyDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -72,7 +75,7 @@ func TestAccAWSRdsDbSnapshotCopy_disappears(t *testing.T) {
 }
 
 func testAccCheckRdsDbSnapshotCopyDestroy(s *terraform.State) error {
-	conn := testAccProvider.Meta().(*AWSClient).rdsconn
+	conn := acctest.Provider.Meta().(*conns.AWSClient).RDSConn
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "aws_rds_db_snapshot_copy" {
@@ -83,7 +86,7 @@ func testAccCheckRdsDbSnapshotCopyDestroy(s *terraform.State) error {
 			DBSnapshotIdentifier: aws.String(rs.Primary.ID),
 		})
 
-		if isAWSErr(err, "InvalidSnapshot.NotFound", "") {
+		if tfawserr.ErrMessageContains(err, "InvalidSnapshot.NotFound", "") {
 			continue
 		}
 
@@ -103,7 +106,7 @@ func testAccCheckRdsDbSnapshotCopyDestroy(s *terraform.State) error {
 
 func testAccCheckRdsDbSnapshotCopyDisappears(snapshot *rds.DBSnapshot) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
-		conn := testAccProvider.Meta().(*AWSClient).rdsconn
+		conn := acctest.Provider.Meta().(*conns.AWSClient).RDSConn
 
 		_, err := conn.DeleteDBSnapshot(&rds.DeleteDBSnapshotInput{
 			DBSnapshotIdentifier: snapshot.DBSnapshotIdentifier,
@@ -114,7 +117,7 @@ func testAccCheckRdsDbSnapshotCopyDisappears(snapshot *rds.DBSnapshot) resource.
 }
 
 func testAccCheckRdsDbSnapshotCopyExists(n string, v *rds.DBSnapshot) resource.TestCheckFunc {
-	providers := []*schema.Provider{testAccProvider}
+	providers := []*schema.Provider{acctest.Provider}
 	return testAccCheckRdsDbSnapshotCopyExistsWithProviders(n, v, &providers)
 }
 
@@ -135,7 +138,7 @@ func testAccCheckRdsDbSnapshotCopyExistsWithProviders(n string, v *rds.DBSnapsho
 				continue
 			}
 
-			conn := provider.Meta().(*AWSClient).rdsconn
+			conn := provider.Meta().(*conns.AWSClient).RDSConn
 
 			request := &rds.DescribeDBSnapshotsInput{
 				DBSnapshotIdentifier: aws.String(rs.Primary.ID),
