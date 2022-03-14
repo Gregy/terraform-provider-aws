@@ -147,7 +147,7 @@ func dataSourceSnapshotRead(d *schema.ResourceData, meta interface{}) error {
 	// never match (only instance identifiers from the current account will match).
 	// The filtering will need to be done client-side.
 	if instanceIdentifierOk {
-		if snapshotType == "public" || snapshotType == "shared" {
+		if snapshotType == "public" || snapshotType == "shared" || d.Get("include_public").(bool) || d.Get("include_shared").(bool) {
 			log.Printf("[DEBUG] Not combining DBInstanceIdentifier with SnapshotType %s in query; filtering client-side instead", snapshotType)
 		} else {
 			params.DBInstanceIdentifier = aws.String(instanceIdentifier.(string))
@@ -159,20 +159,21 @@ func dataSourceSnapshotRead(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	log.Printf("[DEBUG] Reading DB Snapshot: %s", params)
-	resp, err := conn.DescribeDBSnapshots(params)
+	var snapshots []*rds.DBSnapshot
+	err := conn.DescribeDBSnapshotsPages(params, func(page *rds.DescribeDBSnapshotsOutput, lastPage bool) bool {
+		snapshots = append(snapshots, page.DBSnapshots...)
+		return true
+	})
 	if err != nil {
 		return err
 	}
 
-	if len(resp.DBSnapshots) < 1 {
-		return fmt.Errorf("Your query returned no results. Please change your search criteria and try again.")
+	if (snapshotType == "public" || snapshotType == "shared" || d.Get("include_public").(bool) || d.Get("include_shared").(bool)) && instanceIdentifierOk {
+		snapshots = filterSnapshotsByInstanceId(snapshots, instanceIdentifier.(string))
 	}
 
-	var snapshots []*rds.DBSnapshot
-	if (snapshotType == "public" || snapshotType == "shared") && instanceIdentifierOk {
-		snapshots = filterSnapshotsByInstanceId(resp.DBSnapshots, instanceIdentifier.(string))
-	} else {
-		snapshots = resp.DBSnapshots
+	if len(snapshots) < 1 {
+		return fmt.Errorf("Your query returned no results. Please change your search criteria and try again.")
 	}
 
 	var snapshot *rds.DBSnapshot
