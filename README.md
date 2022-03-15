@@ -2,8 +2,22 @@
     <img src=".github/terraform_logo.svg" alt="Terraform logo" title="Terraform" align="right" height="50" />
 </a>
 
-# Terraform Provider for AWS
+# Terraform Provider for AWS fork
 
+This fork integrates these two PRs:
+
+- [Add resource aws_db_snapshot_copy](https://github.com/hashicorp/terraform-provider-aws/pull/9886) in the [add-resource-db-snapshot-copy](https://github.com/Gregy/terraform-provider-aws/tree/add-resource-db-snapshot-copy) branch
+- [Data source aws_db_snapshot: Shared and public snapshot fix](https://github.com/hashicorp/terraform-provider-aws/pull/5767) in the [fix-shared-aws_db_snapshot](https://github.com/Gregy/terraform-provider-aws/tree/fix-shared-aws_db_snapshot) branch
+
+
+I have just rebased them onto the current code and fixed a few problems that cropped up. Thanks to the original authors.
+
+The main branch combines the two PRs and contains a few more commits to make the automatic builds work. The packages can be pulled from the [terraform registry](https://registry.terraform.io/providers/Gregy/aws/)
+
+\
+\
+\
+\
 [![Forums][discuss-badge]][discuss]
 
 [discuss-badge]: https://img.shields.io/badge/discuss-terraform--aws-623CE4.svg?style=flat
